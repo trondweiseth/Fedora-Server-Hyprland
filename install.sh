@@ -1,22 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-############################################
-# Fedora Server → Hyprland + ML4W Bootstrap
-############################################
-
 if [[ $EUID -eq 0 ]]; then
-  echo "Do NOT run as root. Run as normal user."
+  echo "Do NOT run as root."
   exit 1
 fi
 
 echo "=== Updating system ==="
 sudo dnf upgrade -y
 
-echo "=== Installing GUI environment ==="
-sudo dnf group install -y "Server with GUI"
-
-echo "=== Installing Hyprland + Wayland tools ==="
+echo "=== Installing Wayland + Hyprland stack ==="
 sudo dnf install -y \
   hyprland \
   waybar \
@@ -50,40 +43,21 @@ sudo systemctl set-default graphical.target
 systemctl --user enable pipewire || true
 systemctl --user enable wireplumber || true
 
-echo "=== Cloning ML4W Hyprland Starter ==="
+echo "=== Installing minimal display manager ==="
+sudo dnf install -y sddm
+sudo systemctl enable sddm
+
+echo "=== Cloning ML4W ==="
 if [ ! -d "$HOME/.ml4w" ]; then
   git clone https://github.com/mylinuxforwork/hyprland-starter.git "$HOME/.ml4w"
 fi
 
-echo "=== Installing ML4W dotfiles ==="
 mkdir -p "$HOME/.config"
-
-# Copy only config files
 cp -r "$HOME/.ml4w/dotfiles/.config/"* "$HOME/.config/" 2>/dev/null || true
 
-echo "=== Patching Arch-specific Waybar pacman module (if present) ==="
-
-if grep -q "pacman" "$HOME/.config/waybar/config" 2>/dev/null; then
-  sed -i 's/pacman.*/dnf check-update | wc -l/g' "$HOME/.config/waybar/config"
-fi
-
-echo "=== Cleaning potential Arch-specific autostart entries ==="
+echo "=== Cleaning Arch references ==="
 sed -i '/pacman/d' "$HOME/.config/hypr/hyprland.conf" 2>/dev/null || true
 sed -i '/yay/d' "$HOME/.config/hypr/hyprland.conf" 2>/dev/null || true
 
-echo "=== Creating basic fallback hyprland.conf if missing ==="
-if [ ! -f "$HOME/.config/hypr/hyprland.conf" ]; then
-  mkdir -p "$HOME/.config/hypr"
-  cat <<EOF > "$HOME/.config/hypr/hyprland.conf"
-monitor=,preferred,auto,1
-
-exec-once = waybar
-exec-once = nm-applet
-exec-once = hyprpaper
-
-EOF
-fi
-
-echo "=== Bootstrap Complete ==="
-echo "Reboot the system."
-echo "Select Hyprland from login manager."
+echo "=== Done ==="
+echo "Reboot. Select Hyprland in SDDM."
