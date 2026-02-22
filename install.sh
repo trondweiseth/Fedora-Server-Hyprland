@@ -13,8 +13,8 @@ fi
 echo "=== Updating system ==="
 sudo dnf upgrade -y
 
-echo "=== Installing base desktop stack ==="
-sudo dnf groupinstall -y "Basic Desktop"
+echo "=== Installing GUI environment ==="
+sudo dnf group install -y "Server with GUI"
 
 echo "=== Installing Hyprland + Wayland tools ==="
 sudo dnf install -y \
